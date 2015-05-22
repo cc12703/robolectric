@@ -20,6 +20,7 @@ public class ShadowObjectAnimatorTest {
   public void start_shouldRunAnimation() {
     final ObjectAnimator animator = ObjectAnimator.ofInt(target, "transparency", 0, 1, 2, 3, 4);
 
+    Robolectric.getForegroundThreadScheduler().pause();
     animator.setDuration(1000);
     animator.addListener(listener);
     animator.start();
@@ -27,7 +28,7 @@ public class ShadowObjectAnimatorTest {
     verify(listener).onAnimationStart(animator);
     assertThat(target.getTransparency()).isEqualTo(0);
 
-    Robolectric.flushForegroundScheduler();
+    Robolectric.flushForegroundThreadScheduler();
 
     verify(listener).onAnimationEnd(animator);
     assertThat(target.getTransparency()).isEqualTo(4);

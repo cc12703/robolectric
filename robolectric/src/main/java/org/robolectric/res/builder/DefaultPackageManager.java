@@ -10,12 +10,13 @@ import android.content.pm.PackageManager;
 import android.content.pm.ProviderInfo;
 import android.content.pm.ResolveInfo;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.PatternMatcher;
 import android.util.Pair;
 
 import java.io.File;
-import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.UUID;
 
 import org.robolectric.ShadowsAdapter;
 import org.robolectric.manifest.ActivityData;
@@ -38,6 +38,7 @@ import org.robolectric.manifest.IntentFilterData;
 import org.robolectric.res.ResName;
 import org.robolectric.res.ResourceIndex;
 import org.robolectric.res.ResourceLoader;
+import org.robolectric.util.TempDirectory;
 
 public class DefaultPackageManager extends StubPackageManager implements RobolectricPackageManager {
 
@@ -53,32 +54,40 @@ public class DefaultPackageManager extends StubPackageManager implements Robolec
       if (i1 == null && i2 != null) return -1;
       if (i1 != null && i2 == null) return 1;
       if (i1.equals(i2)) return 0;
-      if (i1.getAction() == null && i2.getAction() != null) return -1;
-      if (i1.getAction() != null && i2.getAction() == null) return 1;
-      if (i1.getAction() != null && i2.getAction() != null) {
+      String action1 = i1.getAction();
+      String action2 = i2.getAction();
+      if (action1 == null && action2 != null) return -1;
+      if (action1 != null && action2 == null) return 1;
+      if (action1 != null && action2 != null) {
         if (!i1.getAction().equals(i2.getAction())) {
           return i1.getAction().compareTo(i2.getAction());
         }
       }
-      if (i1.getData() == null && i2.getData() != null) return -1;
-      if (i1.getData() != null && i2.getData() == null) return 1;
-      if (i1.getData() != null && i2.getData() != null) {
-        if (!i1.getData().equals(i2.getData())) {
-          return i1.getData().compareTo(i2.getData());
+      Uri data1 = i1.getData();
+      Uri data2 = i2.getData();
+      if (data1 == null && data2 != null) return -1;
+      if (data1 != null && data2 == null) return 1;
+      if (data1 != null && data2 != null) {
+        if (!data1.equals(data2)) {
+          return data1.compareTo(data2);
         }
       }
-      if (i1.getComponent() == null && i2.getComponent() != null) return -1;
-      if (i1.getComponent() != null && i2.getComponent() == null) return 1;
-      if (i1.getComponent() != null && i2.getComponent() != null) {
-        if (!i1.getComponent().equals(i2.getComponent())) {
-          return i1.getComponent().compareTo(i2.getComponent());
+      ComponentName component1 = i1.getComponent();
+      ComponentName component2 = i2.getComponent();
+      if (component1 == null && component2 != null) return -1;
+      if (component1 != null && component2 == null) return 1;
+      if (component1 != null && component2 != null) {
+        if (!component1.equals(component2)) {
+          return component1.compareTo(component2);
         }
       }
-      if (i1.getPackage() == null && i2.getPackage() != null) return -1;
-      if (i1.getPackage() != null && i2.getPackage() == null) return 1;
-      if (i1.getPackage() != null && i2.getPackage() != null) {
-        if (!i1.getPackage().equals(i2.getPackage())) {
-          return i1.getPackage().compareTo(i2.getPackage());
+      String package1 = i1.getPackage();
+      String package2 = i2.getPackage();
+      if (package1 == null && package2 != null) return -1;
+      if (package1 != null && package2 == null) return 1;
+      if (package1 != null && package2 != null) {
+        if (!package1.equals(package2)) {
+          return package1.compareTo(package2);
         }
       }
       Set<String> categories1 = i1.getCategories();
@@ -100,15 +109,15 @@ public class DefaultPackageManager extends StubPackageManager implements Robolec
   }
 
   private final ShadowsAdapter shadowsAdapter;
-  private final Map<String, AndroidManifest> androidManifests = new LinkedHashMap<String, AndroidManifest>();
-  private final Map<String, PackageInfo> packageInfos = new LinkedHashMap<String, PackageInfo>();
-  private Map<Intent, List<ResolveInfo>> resolveInfoForIntent = new TreeMap<Intent, List<ResolveInfo>>(new IntentComparator());
-  private Map<ComponentName, ComponentState> componentList = new LinkedHashMap<ComponentName, ComponentState>();
-  private Map<ComponentName, Drawable> drawableList = new LinkedHashMap<ComponentName, Drawable>();
-  private Map<String, Drawable> applicationIcons = new HashMap<String, Drawable>();
-  private Map<String, Boolean> systemFeatureList = new LinkedHashMap<String, Boolean>();
-  private Map<IntentFilter, ComponentName> preferredActivities = new LinkedHashMap<IntentFilter, ComponentName>();
-  private Map<Pair<String, Integer>, Drawable> drawables = new LinkedHashMap<Pair<String, Integer>, Drawable>();
+  private final Map<String, AndroidManifest> androidManifests = new LinkedHashMap<>();
+  private final Map<String, PackageInfo> packageInfos = new LinkedHashMap<>();
+  private Map<Intent, List<ResolveInfo>> resolveInfoForIntent = new TreeMap<>(new IntentComparator());
+  private Map<ComponentName, ComponentState> componentList = new LinkedHashMap<>();
+  private Map<ComponentName, Drawable> drawableList = new LinkedHashMap<>();
+  private Map<String, Drawable> applicationIcons = new HashMap<>();
+  private Map<String, Boolean> systemFeatureList = new LinkedHashMap<>();
+  private Map<IntentFilter, ComponentName> preferredActivities = new LinkedHashMap<>();
+  private Map<Pair<String, Integer>, Drawable> drawables = new LinkedHashMap<>();
   private boolean queryIntentImplicitly = false;
   private HashMap<String, Integer> applicationEnabledSettingMap = new HashMap<>();
 
@@ -196,7 +205,7 @@ public class DefaultPackageManager extends StubPackageManager implements Robolec
 
   @Override
   public List<PackageInfo> getInstalledPackages(int flags) {
-    return new ArrayList<PackageInfo>(packageInfos.values());
+    return new ArrayList<>(packageInfos.values());
   }
 
   @Override
@@ -352,7 +361,7 @@ public class DefaultPackageManager extends StubPackageManager implements Robolec
         }
 
         if (outActivities == null) {
-          outActivities = new ArrayList<ComponentName>();
+          outActivities = new ArrayList<>();
         }
 
         outActivities.add(name);
@@ -392,7 +401,7 @@ public class DefaultPackageManager extends StubPackageManager implements Robolec
     ApplicationInfo applicationInfo = new ApplicationInfo();
     applicationInfo.packageName = packageName;
     applicationInfo.sourceDir = new File(".").getAbsolutePath();
-    applicationInfo.dataDir = createTempDir("android-tmp").getAbsolutePath();
+    applicationInfo.dataDir = TempDirectory.create().toAbsolutePath().toString();
 
     packageInfo.applicationInfo = applicationInfo;
 
@@ -431,7 +440,7 @@ public class DefaultPackageManager extends StubPackageManager implements Robolec
     // 1. PackageManager#getPackageInfo(...),
     // 2. PackageManager#queryBroadcastReceivers(...)
     // The following piece of code will let you enable querying receivers through both the methods.
-    List<ActivityInfo> receiverActivityInfos = new ArrayList<ActivityInfo>();
+    List<ActivityInfo> receiverActivityInfos = new ArrayList<>();
     for (int i = 0; i < androidManifest.getBroadcastReceivers().size(); ++i) {
       ActivityInfo activityInfo = new ActivityInfo();
       activityInfo.name = androidManifest.getBroadcastReceivers().get(i).getClassName();
@@ -469,7 +478,7 @@ public class DefaultPackageManager extends StubPackageManager implements Robolec
     applicationInfo.name = androidManifest.getApplicationName();
     applicationInfo.metaData = metaDataToBundle(androidManifest.getApplicationMetaData());
     applicationInfo.sourceDir = new File(".").getAbsolutePath();
-    applicationInfo.dataDir = createTempDir("android-tmp").getAbsolutePath();
+    applicationInfo.dataDir = TempDirectory.create().toAbsolutePath().toString();
 
     if (androidManifest.getLabelRef() != null && resourceIndex != null) {
       Integer id = ResName.getResourceId(resourceIndex, androidManifest.getLabelRef(), androidManifest.getPackageName());
@@ -478,20 +487,6 @@ public class DefaultPackageManager extends StubPackageManager implements Robolec
 
     packageInfo.applicationInfo = applicationInfo;
     addPackage(packageInfo);
-  }
-
-  private static File createTempDir(String name) {
-    try {
-      File tmp = File.createTempFile(name, "robolectric");
-      if (!tmp.delete()) throw new IOException("could not delete "+tmp);
-      tmp = new File(tmp, UUID.randomUUID().toString());
-      if (!tmp.mkdirs()) throw new IOException("could not create "+tmp);
-      tmp.deleteOnExit();
-
-      return tmp;
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
   }
 
   @Override
@@ -528,7 +523,7 @@ public class DefaultPackageManager extends StubPackageManager implements Robolec
   private List<ResolveInfo> findOrCreateInfoList(Intent intent) {
     List<ResolveInfo> infoList = resolveInfoForIntent.get(intent);
     if (infoList == null) {
-      infoList = new ArrayList<ResolveInfo>();
+      infoList = new ArrayList<>();
       resolveInfoForIntent.put(intent, infoList);
     }
     return infoList;
@@ -544,7 +539,7 @@ public class DefaultPackageManager extends StubPackageManager implements Robolec
   }
 
   private List<ResolveInfo> queryImplicitIntent(Intent intent, int flags) {
-    List<ResolveInfo> resolveInfoList = new ArrayList<ResolveInfo>();
+    List<ResolveInfo> resolveInfoList = new ArrayList<>();
 
     for (Map.Entry<String, AndroidManifest> androidManifest : androidManifests.entrySet()) {
       String packageName = androidManifest.getKey();
@@ -668,6 +663,15 @@ public class DefaultPackageManager extends StubPackageManager implements Robolec
       }
     }
     return PackageManager.PERMISSION_DENIED;
+  }
+
+  @Override
+  public void reset() {
+    for (PackageInfo info : packageInfos.values()) {
+      if (info.applicationInfo != null && info.applicationInfo.dataDir != null) {
+        TempDirectory.destroy(Paths.get(info.applicationInfo.dataDir));
+      }
+    }
   }
 
   /**

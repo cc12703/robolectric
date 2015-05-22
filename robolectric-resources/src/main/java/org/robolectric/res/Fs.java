@@ -7,6 +7,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -25,8 +26,11 @@ import static java.util.Arrays.asList;
 abstract public class Fs {
   public static Fs fromJar(URL url) {
     try {
+      if (url.toURI().getPath().contains(" ")) {
+        url = new URL(url.toURI().getPath().replace(" ", "%20"));
+      }
       return new JarFs(new File(url.toURI().getPath()));
-    } catch (URISyntaxException e) {
+    } catch (URISyntaxException | MalformedURLException e) {
       throw new IllegalArgumentException(e);
     }
   }
@@ -74,7 +78,7 @@ abstract public class Fs {
       }
 
       if (cachedMap == null) {
-        cachedMap = new TreeMap<String, JarEntry>();
+        cachedMap = new TreeMap<>();
         Enumeration<JarEntry> entries = jarFile.entries();
         while (entries.hasMoreElements()) {
           JarEntry jarEntry = entries.nextElement();
@@ -114,7 +118,7 @@ abstract public class Fs {
       @Override public FsFile[] listFiles() {
         if (!isDirectory()) return null;
         NavigableSet<String> strings = jarEntryMap.navigableKeySet().subSet(path + "/", false, path + "0", false);
-        List<FsFile> fsFiles = new ArrayList<FsFile>();
+        List<FsFile> fsFiles = new ArrayList<>();
         int startOfFilename = path.length() + 2;
         for (String string : strings) {
           int nextSlash = string.indexOf('/', startOfFilename);
@@ -130,7 +134,7 @@ abstract public class Fs {
       }
 
       @Override public FsFile[] listFiles(Filter filter) {
-        List<FsFile> filteredFsFiles = new ArrayList<FsFile>();
+        List<FsFile> filteredFsFiles = new ArrayList<>();
         for (FsFile fsFile : listFiles()) {
           if (filter.accept(fsFile)) {
             filteredFsFiles.add(fsFile);
@@ -140,7 +144,7 @@ abstract public class Fs {
       }
 
       @Override public String[] listFileNames() {
-        List<String> fileNames = new ArrayList<String>();
+        List<String> fileNames = new ArrayList<>();
         for (FsFile fsFile : listFiles()) {
           fileNames.add(fsFile.getName());
         }
@@ -148,13 +152,14 @@ abstract public class Fs {
       }
 
       @Override public FsFile getParent() {
-        String[] parts = path.split("\\/");
-        return new JarFsFile(Join.join("/", asList(parts).subList(0, parts.length - 1)));
+        int index = path.lastIndexOf('/');
+        String parent = index != -1 ? path.substring(0, index) : "";
+        return new JarFsFile(parent);
       }
 
       @Override public String getName() {
-        String[] parts = path.split("\\/");
-        return parts[parts.length - 1];
+        int index = path.lastIndexOf('/');
+        return index != -1 ? path.substring(index + 1, path.length()) : path;
       }
 
       @Override public InputStream getInputStream() throws IOException {

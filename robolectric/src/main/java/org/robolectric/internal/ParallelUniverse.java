@@ -6,18 +6,21 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.robolectric.*;
+import org.robolectric.Robolectric;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
+import org.robolectric.ShadowsAdapter;
+import org.robolectric.TestLifecycle;
 import org.robolectric.annotation.Config;
 import org.robolectric.internal.fakes.RoboInstrumentation;
 import org.robolectric.manifest.AndroidManifest;
-import org.robolectric.res.ResBunch;
+import org.robolectric.res.ResBundle;
 import org.robolectric.res.ResourceLoader;
 import org.robolectric.res.builder.DefaultPackageManager;
 import org.robolectric.util.ReflectionHelpers;
-import org.robolectric.ShadowsAdapter;
 
-import java.io.File;
 import java.lang.reflect.Method;
 import java.security.Security;
 
@@ -50,7 +53,7 @@ public class ParallelUniverse implements ParallelUniverseInterface {
    * qualifier for the target api level (which comes from the manifest or Config.emulateSdk()).
    */
   private String addVersionQualifierToQualifiers(String qualifiers) {
-    int versionQualifierApiLevel = ResBunch.getVersionQualifierApiLevel(qualifiers);
+    int versionQualifierApiLevel = ResBundle.getVersionQualifierApiLevel(qualifiers);
     if (versionQualifierApiLevel == -1) {
       if (qualifiers.length() > 0) {
         qualifiers += "-";
@@ -114,7 +117,7 @@ public class ParallelUniverse implements ParallelUniverseInterface {
           ClassParameter.from(ApplicationInfo.class, applicationInfo),
           ClassParameter.from(compatibilityInfoClass, null),
           ClassParameter.from(int.class, Context.CONTEXT_INCLUDE_CODE));
-      
+
       shadowsAdapter.bind(application, appManifest, resourceLoader);
       if (appManifest == null) {
         // todo: make this cleaner...
@@ -124,8 +127,8 @@ public class ParallelUniverse implements ParallelUniverseInterface {
       ReflectionHelpers.setField(loadedApk, "mResources", appResources);
       try {
         Context contextImpl = systemContextImpl.createPackageContext(applicationInfo.packageName, Context.CONTEXT_INCLUDE_CODE);
-        ReflectionHelpers.setField(activityThread, "mInitialApplication", application);
-        ReflectionHelpers.callInstanceMethod(application, "attach", ClassParameter.from(Context.class, contextImpl));
+        ReflectionHelpers.setField(activityThreadClass, activityThread, "mInitialApplication", application);
+        ReflectionHelpers.callInstanceMethod(Application.class, application, "attach", ClassParameter.from(Context.class, contextImpl));
       } catch (PackageManager.NameNotFoundException e) {
         throw new RuntimeException(e);
       }
@@ -141,24 +144,7 @@ public class ParallelUniverse implements ParallelUniverseInterface {
   @Override
   public void tearDownApplication() {
     if (RuntimeEnvironment.application != null) {
-      clearFiles(new File(RuntimeEnvironment.application.getApplicationInfo().dataDir));
       RuntimeEnvironment.application.onTerminate();
-    }
-  }
-
-  private static void clearFiles(File dir) {
-    if (dir != null && dir.isDirectory()) {
-      File[] files = dir.listFiles();
-      if (files != null) {
-        for (File f : files) {
-          if (f.isDirectory()) {
-            clearFiles(f);
-          }
-          f.delete();
-        }
-      }
-      dir.delete();
-      dir.getParentFile().delete();
     }
   }
 

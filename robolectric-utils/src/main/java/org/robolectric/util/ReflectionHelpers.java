@@ -59,6 +59,24 @@ public class ReflectionHelpers {
   }
 
   /**
+   * Reflectively set the value of a field.
+   *
+   * @param type Target type.
+   * @param object Target object.
+   * @param fieldName The field name.
+   * @param fieldNewValue New value.
+   */
+  public static void setField(Class<?> type, final Object object, final String fieldName, final Object fieldNewValue) {
+    try {
+      Field field = type.getDeclaredField(fieldName);
+      field.setAccessible(true);
+      field.set(object, fieldNewValue);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  /**
    * Reflectively get the value of a static field.
    *
    * @param field Field object.
@@ -144,6 +162,37 @@ public class ReflectionHelpers {
           return (R) declaredMethod.invoke(instance, values);
         }
       });
+    } catch (InvocationTargetException e) {
+      if (e.getTargetException() instanceof RuntimeException) {
+        throw (RuntimeException) e.getTargetException();
+      }
+      if (e.getTargetException() instanceof Error) {
+        throw (Error) e.getTargetException();
+      }
+      throw new RuntimeException(e.getTargetException());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  /**
+   * Reflectively call an instance method on an object on a specific class.
+   *
+   * @param cl The class.
+   * @param instance Target object.
+   * @param methodName The method name to call.
+   * @param classParameters Array of parameter types and values.
+   * @param <R> The return type.
+   * @return The return value of the method.
+   */
+  public static <R> R callInstanceMethod(Class<?> cl, final Object instance, final String methodName, ClassParameter<?>... classParameters) {
+    try {
+      final Class<?>[] classes = ClassParameter.getClasses(classParameters);
+      final Object[] values = ClassParameter.getValues(classParameters);
+
+      Method declaredMethod = cl.getDeclaredMethod(methodName, classes);
+      declaredMethod.setAccessible(true);
+      return (R) declaredMethod.invoke(instance, values);
     } catch (InvocationTargetException e) {
       if (e.getTargetException() instanceof RuntimeException) {
         throw (RuntimeException) e.getTargetException();

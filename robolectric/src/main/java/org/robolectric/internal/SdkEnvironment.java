@@ -15,7 +15,7 @@ import java.util.Map;
 public class SdkEnvironment {
   private final SdkConfig sdkConfig;
   private final ClassLoader robolectricClassLoader;
-  public final Map<ShadowMap, ShadowWrangler> classHandlersByShadowMap = new HashMap<ShadowMap, ShadowWrangler>();
+  public final Map<ShadowMap, ShadowWrangler> classHandlersByShadowMap = new HashMap<>();
   private ResourceLoader systemResourceLoader;
 
   public SdkEnvironment(SdkConfig sdkConfig, ClassLoader robolectricClassLoader) {
@@ -25,7 +25,12 @@ public class SdkEnvironment {
 
   public PackageResourceLoader createSystemResourceLoader(DependencyResolver dependencyResolver) {
     Fs systemResFs = Fs.fromJar(dependencyResolver.getLocalArtifactUrl(sdkConfig.getSystemResourceDependency()));
-    ResourceExtractor resourceExtractor = new ResourceExtractor(getRobolectricClassLoader());
+    ResourceExtractor resourceExtractor;
+    try {
+      resourceExtractor = new ResourceExtractor(getRobolectricClassLoader().loadClass("com.android.internal.R"), getRobolectricClassLoader().loadClass("android.R"));
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException(e);
+    }
     ResourcePath resourcePath = new ResourcePath(resourceExtractor.getProcessedRFile(), resourceExtractor.getPackageName(), systemResFs.join("res"), systemResFs.join("assets"));
     return new PackageResourceLoader(resourcePath, resourceExtractor);
   }
@@ -51,9 +56,5 @@ public class SdkEnvironment {
 
   public SdkConfig getSdkConfig() {
     return sdkConfig;
-  }
-
-  public interface Factory {
-    public SdkEnvironment create();
   }
 }

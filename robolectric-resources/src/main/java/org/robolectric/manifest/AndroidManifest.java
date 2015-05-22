@@ -1,16 +1,6 @@
 package org.robolectric.manifest;
 
 import android.app.Activity;
-import android.graphics.Color;
-import org.robolectric.annotation.Config;
-import org.robolectric.res.*;
-import org.w3c.dom.Document;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -22,6 +12,16 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import org.robolectric.annotation.Config;
+import org.robolectric.res.FsFile;
+import org.robolectric.res.ResourceLoader;
+import org.robolectric.res.ResourcePath;
+import org.w3c.dom.Document;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import static android.content.pm.ApplicationInfo.FLAG_ALLOW_BACKUP;
 import static android.content.pm.ApplicationInfo.FLAG_ALLOW_CLEAR_USER_DATA;
@@ -261,10 +261,10 @@ public class AndroidManifest {
   }
 
   private List<IntentFilterData> parseIntentFilters(final Node activityNode) {
-    ArrayList<IntentFilterData> intentFilterDatas = new ArrayList<IntentFilterData>();
+    ArrayList<IntentFilterData> intentFilterDatas = new ArrayList<>();
     for (Node n : getChildrenTags(activityNode, "intent-filter")) {
-      ArrayList<String> actionNames = new ArrayList<String>();
-      ArrayList<String> categories = new ArrayList<String>();
+      ArrayList<String> actionNames = new ArrayList<>();
+      ArrayList<String> categories = new ArrayList<>();
       //should only be one action.
       for (Node action : getChildrenTags(n, "action")) {
         NamedNodeMap attributes = action.getAttributes();
@@ -331,45 +331,6 @@ public class AndroidManifest {
       }
     }
     return intentFilterData;
-  }
-
-  /***
-   * Attempt to parse a string in to it's appropriate type
-   * @param value Value to parse
-   * @return Parsed result
-   */
-  private static Object parseValue(String value) {
-    if (value == null) {
-      return null;
-    } else if ("true".equals(value)) {
-      return true;
-    } else if ("false".equals(value)) {
-      return false;
-    } else if (value.startsWith("#")) {
-      // if it's a color, add it and continue
-      try {
-        return Color.parseColor(value);
-      } catch (IllegalArgumentException e) {
-            /* Not a color */
-      }
-    } else if (value.contains(".")) {
-      // most likely a float
-      try {
-        return Float.parseFloat(value);
-      } catch (NumberFormatException e) {
-          // Not a float
-      }
-    } else {
-      // if it's an int, add it and continue
-      try {
-        return Integer.parseInt(value);
-      } catch (NumberFormatException ei) {
-          // Not an int
-      }
-    }
-
-    // Not one of the above types, keep as String
-    return value;
   }
 
   /***
@@ -499,10 +460,9 @@ public class AndroidManifest {
   public Map<String, Object> getApplicationMetaData() {
     parseAndroidManifest();
     if (applicationMetaData == null) {
-      return Collections.emptyMap();
-    } else {
-      return applicationMetaData.getValueMap();
+      applicationMetaData = new MetaData(Collections.<Node>emptyList());
     }
+    return applicationMetaData.getValueMap();
   }
 
   public ResourcePath getResourcePath() {

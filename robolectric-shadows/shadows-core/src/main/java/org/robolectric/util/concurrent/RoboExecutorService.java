@@ -20,7 +20,7 @@ public class RoboExecutorService implements ExecutorService {
   private final Scheduler scheduler;
 
   public RoboExecutorService() {
-    this.scheduler = ShadowApplication.getInstance().getBackgroundScheduler();
+    this.scheduler = ShadowApplication.getInstance().getBackgroundThreadScheduler();
   }
 
   @Override
@@ -50,12 +50,12 @@ public class RoboExecutorService implements ExecutorService {
 
   @Override
   public <T> Future<T> submit(Callable<T> tCallable) {
-    return schedule(new FutureTask<T>(tCallable));
+    return schedule(new FutureTask<>(tCallable));
   }
 
   @Override
   public <T> Future<T> submit(Runnable runnable, T t) {
-    return schedule(new FutureTask<T>(runnable, t));
+    return schedule(new FutureTask<>(runnable, t));
   }
 
   @Override

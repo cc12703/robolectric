@@ -143,12 +143,10 @@ public class CustomRobolectricTestRunnerTest {
       super(testClass);
     }
 
-    @Override public InstrumentingClassLoaderConfig createSetup() {
-      return new InstrumentingClassLoaderConfig() {
-        @Override public boolean shouldAcquire(String name) {
-          return !name.equals(CustomRobolectricTestRunnerTest.class.getName()) && super.shouldAcquire(name);
-        }
-      };
+    @Override public InstrumentationConfiguration createClassLoaderConfig() {
+      return InstrumentationConfiguration.newBuilder()
+          .doNotAquireClass(CustomRobolectricTestRunnerTest.class.getName())
+          .build();
     }
 
     @Override protected Class<? extends TestLifecycle> getTestLifecycleClass() {
@@ -162,9 +160,7 @@ public class CustomRobolectricTestRunnerTest {
           method.invoke(test);
         } catch (NoSuchMethodException e) {
           // no prob
-        } catch (InvocationTargetException e) {
-          throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
+        } catch (InvocationTargetException | IllegalAccessException e) {
           throw new RuntimeException(e);
         }
       }

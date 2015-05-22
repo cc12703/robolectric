@@ -7,6 +7,7 @@ import android.os.Message;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.TestRunners;
 import org.robolectric.util.ReflectionHelpers;
 import org.robolectric.util.TestRunnable;
@@ -377,7 +378,7 @@ public class ShadowHandlerTest {
 
   @Test
   public void shouldRemoveSingleMessage() throws Exception {
-    final List<Object> objects = new ArrayList<Object>();
+    final List<Object> objects = new ArrayList<>();
     ShadowLooper.pauseMainLooper();
 
     Handler handler = new Handler() {
@@ -455,7 +456,7 @@ public class ShadowHandlerTest {
 
   @Test
   public void shouldSetWhenOnMessage() throws Exception {
-    final List<Long>  whens = new ArrayList<Long>();
+    final List<Long>  whens = new ArrayList<>();
     Handler h = new Handler(new Handler.Callback() {
       @Override
       public boolean handleMessage(Message msg) {
@@ -466,9 +467,9 @@ public class ShadowHandlerTest {
 
     h.sendEmptyMessage(0);
     h.sendEmptyMessageDelayed(0, 4000l);
-    ShadowLooper.getUiThreadScheduler().advanceToLastPostedRunnable();
+    Robolectric.getForegroundThreadScheduler().advanceToLastPostedRunnable();
     h.sendEmptyMessageDelayed(0, 12000l);
-    ShadowLooper.getUiThreadScheduler().advanceToLastPostedRunnable();
+    Robolectric.getForegroundThreadScheduler().advanceToLastPostedRunnable();
 
     assertThat(whens).as("whens").containsExactly(0l, 4000l, 16000l);
   }

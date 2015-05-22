@@ -62,19 +62,19 @@ public class ShadowApplication extends ShadowContextWrapper {
   private AndroidManifest appManifest;
   private ResourceLoader resourceLoader;
   private ContentResolver contentResolver;
-  private List<Intent> startedActivities = new ArrayList<Intent>();
-  private List<Intent> startedServices = new ArrayList<Intent>();
-  private List<Intent> stoppedServies = new ArrayList<Intent>();
-  private List<Intent> broadcastIntents = new ArrayList<Intent>();
+  private List<Intent> startedActivities = new ArrayList<>();
+  private List<Intent> startedServices = new ArrayList<>();
+  private List<Intent> stoppedServies = new ArrayList<>();
+  private List<Intent> broadcastIntents = new ArrayList<>();
   private List<ServiceConnection> boundServiceConnections = new ArrayList<>();
   private List<ServiceConnection> unboundServiceConnections = new ArrayList<>();
-  private List<Wrapper> registeredReceivers = new ArrayList<Wrapper>();
-  private Map<String, Intent> stickyIntents = new LinkedHashMap<String, Intent>();
+  private List<Wrapper> registeredReceivers = new ArrayList<>();
+  private Map<String, Intent> stickyIntents = new LinkedHashMap<>();
   private Looper mainLooper = ShadowLooper.myLooper();
   private Handler mainHandler = new Handler(mainLooper);
   private Scheduler backgroundScheduler = new Scheduler();
-  private Map<String, Map<String, Object>> sharedPreferenceMap = new HashMap<String, Map<String, Object>>();
-  private ArrayList<Toast> shownToasts = new ArrayList<Toast>();
+  private Map<String, Map<String, Object>> sharedPreferenceMap = new HashMap<>();
+  private ArrayList<Toast> shownToasts = new ArrayList<>();
   private PowerManager.WakeLock latestWakeLock;
   private ShadowAlertDialog latestAlertDialog;
   private ShadowDialog latestDialog;
@@ -82,7 +82,7 @@ public class ShadowApplication extends ShadowContextWrapper {
   private Object bluetoothAdapter = newInstanceOf("android.bluetooth.BluetoothAdapter");
   private Resources resources;
   private AssetManager assetManager;
-  private Set<String> grantedPermissions = new HashSet<String>();
+  private Set<String> grantedPermissions = new HashSet<>();
 
   private Map<Intent, ServiceConnectionDataWrapper> serviceConnectionDataForIntent = new HashMap<>();
   private Map<ServiceConnection, ServiceConnectionDataWrapper> serviceConnectionDataForServiceConnection = new HashMap<>();
@@ -92,7 +92,7 @@ public class ShadowApplication extends ShadowContextWrapper {
   // these are managed by the AppSingletonizier... kinda gross, sorry [xw]
   LayoutInflater layoutInflater;
   AppWidgetManager appWidgetManager;
-  private List<String> unbindableActions = new ArrayList<String>();
+  private List<String> unbindableActions = new ArrayList<>();
 
   private boolean strictI18n = false;
   private boolean checkActivities;
@@ -110,7 +110,7 @@ public class ShadowApplication extends ShadowContextWrapper {
    * Note: calling this method does not pause or un-pause the scheduler.
    */
   public static void runBackgroundTasks() {
-    getInstance().getBackgroundScheduler().advanceBy(0);
+    getInstance().getBackgroundThreadScheduler().advanceBy(0);
   }
 
   public static void setDisplayMetricsDensity(float densityMultiplier) {
@@ -134,8 +134,6 @@ public class ShadowApplication extends ShadowContextWrapper {
 
     if (appManifest != null) {
       setPackageName(appManifest.getPackageName());
-      setApplicationName(appManifest.getApplicationName());
-
       this.registerBroadcastReceivers(appManifest);
     }
   }
@@ -167,7 +165,21 @@ public class ShadowApplication extends ShadowContextWrapper {
     return shownToasts;
   }
 
-  public Scheduler getBackgroundScheduler() {
+  /**
+   * Return the foreground scheduler.
+   *
+   * @return  Foreground scheduler.
+   */
+  public Scheduler getForegroundThreadScheduler() {
+    return shadowOf(Looper.getMainLooper()).getScheduler();
+  }
+
+  /**
+   * Return the background scheduler.
+   *
+   * @return  Background scheduler.
+   */
+  public Scheduler getBackgroundThreadScheduler() {
     return backgroundScheduler;
   }
 
@@ -438,9 +450,9 @@ public class ShadowApplication extends ShadowContextWrapper {
   private List<Wrapper> getAppropriateWrappers(Intent intent, String receiverPermission) {
     broadcastIntents.add(intent);
 
-    List<Wrapper> result = new ArrayList<Wrapper>();
+    List<Wrapper> result = new ArrayList<>();
 
-    List<Wrapper> copy = new ArrayList<Wrapper>();
+    List<Wrapper> copy = new ArrayList<>();
     copy.addAll(registeredReceivers);
     for (Wrapper wrapper : copy) {
       if (hasMatchingPermission(wrapper.broadcastPermission, receiverPermission)
@@ -621,7 +633,7 @@ public class ShadowApplication extends ShadowContextWrapper {
   }
 
   public List<BroadcastReceiver> getReceiversForIntent(Intent intent) {
-    ArrayList<BroadcastReceiver> broadcastReceivers = new ArrayList<BroadcastReceiver>();
+    ArrayList<BroadcastReceiver> broadcastReceivers = new ArrayList<>();
     for (Wrapper wrapper : registeredReceivers) {
       if (wrapper.intentFilter.matchAction(intent.getAction())) {
         broadcastReceivers.add(wrapper.getBroadcastReceiver());
@@ -720,7 +732,7 @@ public class ShadowApplication extends ShadowContextWrapper {
     return appManifest;
   }
 
-  private final Map<String, Object> singletons = new HashMap<String, Object>();
+  private final Map<String, Object> singletons = new HashMap<>();
 
   public <T> T getSingleton(Class<T> clazz, Provider<T> provider) {
     synchronized (singletons) {

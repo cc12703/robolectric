@@ -3,9 +3,6 @@ package org.robolectric.shadows;
 import android.widget.Scroller;
 import org.robolectric.annotation.Implementation;
 import org.robolectric.annotation.Implements;
-import org.robolectric.util.Scheduler;
-
-import static org.robolectric.Shadows.shadowOf;
 
 @Implements(Scroller.class)
 public class ShadowScroller {
@@ -60,11 +57,11 @@ public class ShadowScroller {
     this.startY = startY;
     finalX = startX + dx;
     finalY = startY + dy;
-    startTime = getScheduler().getCurrentTime();
+    startTime = ShadowApplication.getInstance().getForegroundThreadScheduler().getCurrentTime();
     this.duration = duration;
     started = true;
     // enque a dummy task so that the scheduler will actually run
-    getScheduler().postDelayed(new Runnable() {
+    ShadowApplication.getInstance().getForegroundThreadScheduler().postDelayed(new Runnable() {
       @Override
       public void run() {
         // do nothing
@@ -92,11 +89,7 @@ public class ShadowScroller {
   }
 
   private long deltaTime() {
-    return getScheduler().getCurrentTime() - startTime;
-  }
-
-  private Scheduler getScheduler() {
-    return ShadowLooper.getUiThreadScheduler();
+    return ShadowApplication.getInstance().getForegroundThreadScheduler().getCurrentTime() - startTime;
   }
 
   private int deltaX() {

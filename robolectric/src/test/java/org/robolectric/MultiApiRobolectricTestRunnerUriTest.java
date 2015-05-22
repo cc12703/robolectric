@@ -1,14 +1,8 @@
 package org.robolectric;
 
-import android.net.Uri;
-import android.os.Build;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.annotation.Config;
-
-import java.util.Arrays;
-import java.util.Collection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -17,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author John Ferlisi
  */
-@RunWith(ExperimentalRobolectricTestRunner.class)
-public final class ExperimentalRobolectricTestRunnerUriTest {
+@RunWith(MultiApiRobolectricTestRunner.class)
+public final class MultiApiRobolectricTestRunnerUriTest {
 
   @Test
   @Config(manifest = Config.NONE)

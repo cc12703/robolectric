@@ -10,6 +10,7 @@ import org.robolectric.annotation.RealObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,11 +31,13 @@ public class ShadowCamera {
   private boolean released;
   private Camera.Parameters parameters;
   private Camera.PreviewCallback previewCallback;
+  private List<byte[]> callbackBuffers = new ArrayList<>();
   private SurfaceHolder surfaceHolder;
   private int displayOrientation;
   private Camera.AutoFocusCallback autoFocusCallback;
+  private boolean autoFocusing;
 
-  private static Map<Integer, Camera.CameraInfo> cameras = new HashMap<Integer,Camera.CameraInfo>();
+  private static Map<Integer, Camera.CameraInfo> cameras = new HashMap<>();
 
   @RealObject
   private Camera realCamera;
@@ -123,6 +126,26 @@ public class ShadowCamera {
     previewCallback = cb;
   }
 
+  /**
+   * Allows test cases to invoke the preview callback, to simulate a frame of camera data.
+   *
+   * @param data byte buffer of simulated camera data
+   */
+  public void invokePreviewCallback(byte[] data) {
+    if (previewCallback != null) {
+      previewCallback.onPreviewFrame(data, realCamera);
+    }
+  }
+
+  @Implementation
+  public void addCallbackBuffer(byte[] callbackBuffer) {
+    callbackBuffers.add(callbackBuffer);
+  }
+
+  public List<byte[]> getAddedCallbackBuffers() {
+    return Collections.unmodifiableList(callbackBuffers);
+  }
+
   @Implementation
   public void setDisplayOrientation(int degrees) {
     displayOrientation = degrees;
@@ -138,18 +161,29 @@ public class ShadowCamera {
   @Implementation
   public void autoFocus(Camera.AutoFocusCallback callback) {
     autoFocusCallback = callback;
+    autoFocusing = true;
+  }
+
+  @Implementation
+  public void cancelAutoFocus() {
+    autoFocusCallback = null;
+    autoFocusing = false;
   }
 
   public boolean hasRequestedAutoFocus() {
-    return autoFocusCallback != null;
+    return autoFocusing;
   }
 
   public void invokeAutoFocusCallback(boolean success, Camera camera) {
     if (autoFocusCallback == null) {
       throw new IllegalStateException(
-          "cannot invoke AutoFocusCallback before autoFocus has been called.");
+          "cannot invoke AutoFocusCallback before autoFocus() has been called "
+              + "or after cancelAutoFocus() has been called "
+              + "or after the callback has been invoked.");
     }
     autoFocusCallback.onAutoFocus(success, camera);
+    autoFocusCallback = null;
+    autoFocusing = false;
   }
 
   @Implementation
@@ -162,17 +196,6 @@ public class ShadowCamera {
   @Implementation
   public static int getNumberOfCameras() {
     return cameras.size();
-  }
-
-  /**
-   * Allows test cases to invoke the preview callback, to simulate a frame of camera data.
-   *
-   * @param data byte buffer of simulated camera data
-   */
-  public void invokePreviewCallback(byte[] data) {
-    if (previewCallback != null) {
-      previewCallback.onPreviewFrame(data, realCamera);
-    }
   }
 
   public boolean isLocked() {
@@ -223,7 +246,7 @@ public class ShadowCamera {
     private int previewFps = 30;
     private int exposureCompensation = 0;
     private String focusMode;
-    private List<String> supportedFocusModes = new ArrayList<String>();
+    private List<String> supportedFocusModes = new ArrayList<>();
 
     @Implementation
     public Camera.Size getPictureSize() {
@@ -259,7 +282,7 @@ public class ShadowCamera {
 
     @Implementation
     public List<Camera.Size> getSupportedPictureSizes() {
-      List<Camera.Size> supportedSizes = new ArrayList<Camera.Size>();
+      List<Camera.Size> supportedSizes = new ArrayList<>();
       addSize(supportedSizes, 320, 240);
       addSize(supportedSizes, 640, 480);
       addSize(supportedSizes, 800, 600);
@@ -268,7 +291,7 @@ public class ShadowCamera {
 
     @Implementation
     public List<Integer> getSupportedPictureFormats() {
-      List<Integer> formats = new ArrayList<Integer>();
+      List<Integer> formats = new ArrayList<>();
       formats.add(ImageFormat.NV21);
       formats.add(ImageFormat.JPEG);
       return formats;
@@ -276,7 +299,7 @@ public class ShadowCamera {
 
     @Implementation
     public List<Integer> getSupportedPreviewFormats() {
-      List<Integer> formats = new ArrayList<Integer>();
+      List<Integer> formats = new ArrayList<>();
       formats.add(ImageFormat.NV21);
       formats.add(ImageFormat.JPEG);
       return formats;
@@ -284,7 +307,7 @@ public class ShadowCamera {
 
     @Implementation
     public List<int[]> getSupportedPreviewFpsRange() {
-      List<int[]> supportedRanges = new ArrayList<int[]>();
+      List<int[]> supportedRanges = new ArrayList<>();
       addRange(supportedRanges, 15000, 15000);
       addRange(supportedRanges, 10000, 30000);
       return supportedRanges;
@@ -292,7 +315,7 @@ public class ShadowCamera {
 
     @Implementation
     public List<Integer> getSupportedPreviewFrameRates() {
-      List<Integer> supportedRates = new ArrayList<Integer>();
+      List<Integer> supportedRates = new ArrayList<>();
       supportedRates.add(10);
       supportedRates.add(15);
       supportedRates.add(30);
@@ -301,7 +324,7 @@ public class ShadowCamera {
 
     @Implementation
     public List<Camera.Size> getSupportedPreviewSizes() {
-      List<Camera.Size> supportedSizes = new ArrayList<Camera.Size>();
+      List<Camera.Size> supportedSizes = new ArrayList<>();
       addSize(supportedSizes, 320, 240);
       addSize(supportedSizes, 640, 480);
       return supportedSizes;

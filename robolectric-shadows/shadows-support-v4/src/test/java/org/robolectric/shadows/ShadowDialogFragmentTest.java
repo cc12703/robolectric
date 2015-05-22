@@ -11,7 +11,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.R;
@@ -22,12 +21,11 @@ import org.robolectric.util.Transcript;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(TestRunnerWithManifest.class)
-public class DialogFragmentTest {
+public class ShadowDialogFragmentTest {
 
   private FragmentActivity activity;
   private TestDialogFragment dialogFragment;

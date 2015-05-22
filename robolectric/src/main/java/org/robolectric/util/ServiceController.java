@@ -14,16 +14,14 @@ public class ServiceController<T extends Service> extends ComponentController<Se
 
   public static <T extends Service> ServiceController<T> of(ShadowsAdapter shadowsAdapter, Class<T> serviceClass) {
     try {
-      return new ServiceController<T>(shadowsAdapter, serviceClass);
-    } catch (IllegalAccessException e) {
-      throw new RuntimeException(e);
-    } catch (InstantiationException e) {
+      return new ServiceController<>(shadowsAdapter, serviceClass);
+    } catch (IllegalAccessException | InstantiationException e) {
       throw new RuntimeException(e);
     }
   }
 
   public static <T extends Service> ServiceController<T> of(ShadowsAdapter shadowsAdapter, T service) {
-    return new ServiceController<T>(shadowsAdapter, service);
+    return new ServiceController<>(shadowsAdapter, service);
   }
 
   public ServiceController(ShadowsAdapter shadowsAdapter, Class<T> serviceClass) throws IllegalAccessException, InstantiationException {
@@ -48,7 +46,7 @@ public class ServiceController<T extends Service> extends ComponentController<Se
       throw new RuntimeException(e);
     }
 
-    ReflectionHelpers.callInstanceMethod(component, "attach",
+    ReflectionHelpers.callInstanceMethod(Service.class, component, "attach",
         ClassParameter.from(Context.class, baseContext),
         ClassParameter.from(activityThreadClass, null),
         ClassParameter.from(String.class, component.getClass().getSimpleName()),

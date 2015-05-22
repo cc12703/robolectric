@@ -20,6 +20,7 @@ import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
+import org.robolectric.internal.ShadowedObject;
 import org.robolectric.internal.Shadow;
 import org.robolectric.internal.ShadowConstants;
 import org.objectweb.asm.tree.VarInsnNode;
@@ -62,12 +63,12 @@ public class InstrumentingClassLoader extends ClassLoader implements Opcodes {
   private static final String GET_ROBO_DATA_SIGNATURE = "()Ljava/lang/Object;";
 
   private final URLClassLoader urls;
-  private final InstrumentingClassLoaderConfig config;
+  private final InstrumentationConfiguration config;
   private final Map<String, Class> classes = new HashMap<>();
   private final Map<String, String> classesToRemap;
-  private final Set<InstrumentingClassLoaderConfig.MethodRef> methodsToIntercept;
+  private final Set<InstrumentationConfiguration.MethodRef> methodsToIntercept;
 
-  public InstrumentingClassLoader(InstrumentingClassLoaderConfig config, URL... urls) {
+  public InstrumentingClassLoader(InstrumentationConfiguration config, URL... urls) {
     super(InstrumentingClassLoader.class.getClassLoader());
     this.config = config;
     this.urls = new URLClassLoader(urls, null);
@@ -138,6 +139,8 @@ public class InstrumentingClassLoader extends ClassLoader implements Opcodes {
       final ClassReader classReader = new ClassReader(origClassBytes);
       classReader.accept(classNode, 0);
 
+      classNode.interfaces.add(Type.getInternalName(ShadowedObject.class));
+
       try {
         byte[] bytes;
         ClassInfo classInfo = new ClassInfo(className, classNode);
@@ -161,16 +164,13 @@ public class InstrumentingClassLoader extends ClassLoader implements Opcodes {
 
   protected byte[] getByteCode(String className) throws ClassNotFoundException {
     String classFilename = className.replace('.', '/') + ".class";
-    InputStream classBytesStream = getResourceAsStream(classFilename);
-    if (classBytesStream == null) throw new ClassNotFoundException(className);
+    try (InputStream classBytesStream = getResourceAsStream(classFilename)) {
+      if (classBytesStream == null) throw new ClassNotFoundException(className);
 
-    byte[] origClassBytes;
-    try {
-      origClassBytes = readBytes(classBytesStream);
+      return readBytes(classBytesStream);
     } catch (IOException e) {
       throw new ClassNotFoundException("couldn't load " + className, e);
     }
-    return origClassBytes;
   }
 
   private void ensurePackage(final String className) {
@@ -346,10 +346,10 @@ public class InstrumentingClassLoader extends ClassLoader implements Opcodes {
     return newMap;
   }
 
-  private Set<InstrumentingClassLoaderConfig.MethodRef> convertToSlashes(Set<InstrumentingClassLoaderConfig.MethodRef> methodRefs) {
-    HashSet<InstrumentingClassLoaderConfig.MethodRef> transformed = new HashSet<>();
-    for (InstrumentingClassLoaderConfig.MethodRef methodRef : methodRefs) {
-      transformed.add(new InstrumentingClassLoaderConfig.MethodRef(internalize(methodRef.className), methodRef.methodName));
+  private Set<InstrumentationConfiguration.MethodRef> convertToSlashes(Set<InstrumentationConfiguration.MethodRef> methodRefs) {
+    HashSet<InstrumentationConfiguration.MethodRef> transformed = new HashSet<>();
+    for (InstrumentationConfiguration.MethodRef methodRef : methodRefs) {
+      transformed.add(new InstrumentationConfiguration.MethodRef(internalize(methodRef.className), methodRef.methodName));
     }
     return transformed;
   }
@@ -450,7 +450,7 @@ public class InstrumentingClassLoader extends ClassLoader implements Opcodes {
       }
 
       {
-        MethodNode initMethodNode = new MethodNode(ACC_PROTECTED, ShadowConstants.GET_ROBO_DATA_METHOD_NAME, GET_ROBO_DATA_SIGNATURE, null, null);
+        MethodNode initMethodNode = new MethodNode(ACC_PUBLIC, ShadowConstants.GET_ROBO_DATA_METHOD_NAME, GET_ROBO_DATA_SIGNATURE, null, null);
         MyGenerator m = new MyGenerator(initMethodNode);
         m.loadThis();                                         // this
         m.getField(classType, ShadowConstants.CLASS_HANDLER_DATA_FIELD_NAME, OBJECT_TYPE);  // contents of __robo_data__
@@ -497,7 +497,7 @@ public class InstrumentingClassLoader extends ClassLoader implements Opcodes {
       }
 
       InsnList removedInstructions = extractCallToSuperConstructor(method);
-      method.name = Shadow.directMethodName(className, ShadowConstants.CONSTRUCTOR_METHOD_NAME);
+      method.name = Shadow.directMethodName(ShadowConstants.CONSTRUCTOR_METHOD_NAME);
       classNode.methods.add(redirectorMethod(method, ShadowConstants.CONSTRUCTOR_METHOD_NAME));
 
       String[] exceptions = exceptionArray(method);
@@ -570,8 +570,7 @@ public class InstrumentingClassLoader extends ClassLoader implements Opcodes {
       }
 
       String originalName = method.name;
-      method.name = Shadow.directMethodName(className, originalName);
-      classNode.methods.add(redirectorMethod(method, Shadow.directMethodName(originalName)));
+      method.name = Shadow.directMethodName(originalName);
 
       MethodNode delegatorMethodNode = new MethodNode(method.access, originalName, method.desc, method.signature, exceptionArray(method));
       delegatorMethodNode.access &= ~(ACC_NATIVE | ACC_ABSTRACT | ACC_FINAL);
@@ -943,8 +942,8 @@ public class InstrumentingClassLoader extends ClassLoader implements Opcodes {
 
   private boolean shouldIntercept(MethodInsnNode targetMethod) {
     if (targetMethod.name.equals("<init>")) return false; // sorry, can't strip out calls to super() in constructor
-    return methodsToIntercept.contains(new InstrumentingClassLoaderConfig.MethodRef(targetMethod.owner, targetMethod.name))
-        || methodsToIntercept.contains(new InstrumentingClassLoaderConfig.MethodRef(targetMethod.owner, "*"));
+    return methodsToIntercept.contains(new InstrumentationConfiguration.MethodRef(targetMethod.owner, targetMethod.name))
+        || methodsToIntercept.contains(new InstrumentationConfiguration.MethodRef(targetMethod.owner, "*"));
   }
 
   /**

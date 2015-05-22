@@ -2,10 +2,11 @@ package org.robolectric.shadows;
 
 import android.os.HandlerThread;
 import android.os.Looper;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.robolectric.Robolectric;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.TestRunners;
 
@@ -69,15 +70,22 @@ public class ShadowHandlerThreadTest {
   @Test
   public void shouldCallOnLooperPrepared() throws Exception {
     final Boolean[] wasCalled = new Boolean[] { false };
+    final CountDownLatch latch = new CountDownLatch(1);
     handlerThread = new HandlerThread("test") {
       @Override
       protected void onLooperPrepared() {
         wasCalled[0] = true;
+        latch.countDown();
       }
     };
     handlerThread.start();
-    assertNotNull(handlerThread.getLooper());
-    assertTrue(wasCalled[0]);
+    try {
+      assertNotNull(handlerThread.getLooper());
+      latch.await(1, TimeUnit.SECONDS);
+      assertTrue(wasCalled[0]);
+    } finally {
+      handlerThread.quit();
+    }
   }
 
   private static class MyUncaughtExceptionHandler implements Thread.UncaughtExceptionHandler {

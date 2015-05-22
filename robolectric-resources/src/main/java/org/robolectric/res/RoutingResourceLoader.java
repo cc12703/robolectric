@@ -1,12 +1,12 @@
 package org.robolectric.res;
 
 import org.jetbrains.annotations.NotNull;
-import org.w3c.dom.Document;
 
 import java.io.InputStream;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.robolectric.res.builder.XmlBlock;
 
 public class RoutingResourceLoader implements ResourceLoader {
   private final Map<String, ResourceLoader> resourceLoaders;
@@ -15,7 +15,7 @@ public class RoutingResourceLoader implements ResourceLoader {
   public RoutingResourceLoader(Map<String, ResourceLoader> resourceLoaders) {
     this.resourceLoaders = resourceLoaders;
 
-    Set<ResourceIndex> resourceIndexes = new HashSet<ResourceIndex>();
+    Set<ResourceIndex> resourceIndexes = new HashSet<>();
     for (ResourceLoader resourceLoader : resourceLoaders.values()) {
       resourceIndexes.add(resourceLoader.getResourceIndex());
     }
@@ -37,8 +37,8 @@ public class RoutingResourceLoader implements ResourceLoader {
   }
 
   @Override
-  public Document getXml(ResName resName, String qualifiers) {
-    return pickFor(resName).getXml(resName, "");
+  public XmlBlock getXml(ResName resName, String qualifiers) {
+    return pickFor(resName).getXml(resName, qualifiers);
   }
 
   @Override

@@ -1,7 +1,6 @@
 package org.robolectric.internal.bytecode;
 
 import android.content.Context;
-import org.robolectric.internal.SdkConfig;
 import org.robolectric.annotation.Implements;
 import org.robolectric.annotation.RealObject;
 import org.robolectric.util.ReflectionHelpers;
@@ -29,6 +28,7 @@ public class ShadowWrangler implements ClassHandler {
   public static final Plan CALL_REAL_CODE_PLAN = null;
   private static final boolean STRIP_SHADOW_STACK_TRACES = true;
   private static final ShadowConfig NO_SHADOW_CONFIG = new ShadowConfig(Object.class.getName(), true, false, false);
+  private static final Object NO_SHADOW = new Object();
   private final ShadowMap shadowMap;
   private final Map<Class, MetaShadow> metaShadowMap = new HashMap<>();
   private final Map<String, Plan> planCache = new LinkedHashMap<String, Plan>() {
@@ -38,7 +38,6 @@ public class ShadowWrangler implements ClassHandler {
     }
   };
   private final Map<Class, ShadowConfig> shadowConfigCache = new HashMap<>();
-  private final SdkConfig sdkConfig;
   public static final HashMap<String, Object> PRIMITIVE_RETURN_VALUES = new HashMap<>();
 
   static {
@@ -51,9 +50,8 @@ public class ShadowWrangler implements ClassHandler {
     PRIMITIVE_RETURN_VALUES.put("byte", (byte) 0);
   }
 
-  public ShadowWrangler(ShadowMap shadowMap, SdkConfig sdkConfig) {
+  public ShadowWrangler(ShadowMap shadowMap) {
     this.shadowMap = shadowMap;
-    this.sdkConfig = sdkConfig;
   }
 
   public static Class<?> loadClass(String paramType, ClassLoader classLoader) {
@@ -344,12 +342,9 @@ public class ShadowWrangler implements ClassHandler {
         }
 
         if (methodName.startsWith(ShadowConstants.ROBO_PREFIX)) {
-          String fullPrefix = Shadow.directMethodName(stackTraceElement.getClassName(), "");
-          if (methodName.startsWith(fullPrefix)) {
-            methodName = methodName.substring(fullPrefix.length());
-            stackTraceElement = new StackTraceElement(className, methodName,
-                stackTraceElement.getFileName(), stackTraceElement.getLineNumber());
-          }
+          methodName = methodName.substring(ShadowConstants.ROBO_PREFIX.length());
+          stackTraceElement = new StackTraceElement(className, methodName,
+              stackTraceElement.getFileName(), stackTraceElement.getLineNumber());
         }
 
         if (className.startsWith("sun.reflect.") || className.startsWith("java.lang.reflect.")) {
@@ -368,29 +363,18 @@ public class ShadowWrangler implements ClassHandler {
   }
 
   public Object createShadowFor(Object instance) {
-    Object shadow;
-
     String shadowClassName = getShadowClassName(instance);
 
-    if (shadowClassName == null) return new Object();
+    if (shadowClassName == null) return NO_SHADOW;
 
     try {
       Class<?> shadowClass = loadClass(shadowClassName, instance.getClass().getClassLoader());
-      Constructor<?> instanceConstructor = findInstanceConstructor(instance, shadowClass);
-      Constructor<?> sdkConfigConstructor = findSdkConfigConstructor(shadowClass);
-      if (instanceConstructor != null) {
-        shadow = instanceConstructor.newInstance(instance);
-      } else if (sdkConfigConstructor != null) {
-        shadow = sdkConfigConstructor.newInstance(sdkConfig);
-      } else {
-        shadow = shadowClass.newInstance();
-      }
-
+      Object shadow = shadowClass.newInstance();
       injectRealObjectOn(shadow, shadowClass, instance);
 
       return shadow;
-    } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-      throw new RuntimeException(e);
+    } catch (InstantiationException | IllegalAccessException e) {
+      throw new RuntimeException("Could not instantiate shadow, missing public empty constructor.", e);
     }
   }
 
@@ -428,31 +412,6 @@ public class ShadowWrangler implements ClassHandler {
       return null;
     }
     return loadClass(shadowConfig.shadowClassName, originalClass.getClassLoader());
-  }
-
-  private Constructor<?> findInstanceConstructor(Object instance, Class<?> shadowClass) {
-    Class clazz = instance.getClass();
-
-    Constructor constructor;
-    for (constructor = null; constructor == null && clazz != null; clazz = clazz.getSuperclass()) {
-      try {
-        constructor = shadowClass.getConstructor(clazz);
-      } catch (NoSuchMethodException e) {
-        // expected
-      }
-    }
-    return constructor;
-  }
-
-  private Constructor<?> findSdkConfigConstructor(Class<?> shadowClass) {
-
-    Constructor constructor = null;
-    try {
-      constructor = shadowClass.getConstructor(SdkConfig.class);
-    } catch (NoSuchMethodException e) {
-      // expected
-    }
-    return constructor;
   }
 
   private void writeField(Object target, Object value, Field realObjectField) {

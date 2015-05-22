@@ -10,7 +10,6 @@ import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.TestRunners;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -36,7 +35,7 @@ public class ShadowAnimationSetTest {
 
     verify(moveListener).onAnimationStart(move);
 
-    Robolectric.flushForegroundScheduler();
+    Robolectric.flushForegroundThreadScheduler();
 
     verify(moveListener).onAnimationEnd(move);
   }

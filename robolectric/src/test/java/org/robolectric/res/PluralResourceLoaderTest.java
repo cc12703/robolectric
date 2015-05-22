@@ -12,7 +12,7 @@ public class PluralResourceLoaderTest {
 
   @Before
   public void setUp() throws Exception {
-    pluralRulesResBundle = new ResBundle<PluralResourceLoader.PluralRules>();
+    pluralRulesResBundle = new ResBundle<>();
     PluralResourceLoader pluralResourceLoader = new PluralResourceLoader(pluralRulesResBundle);
 
     new DocumentLoader(testResources()).load("values", pluralResourceLoader);
@@ -21,7 +21,7 @@ public class PluralResourceLoaderTest {
   @Test
   public void testPluralsAreResolved() throws Exception {
     ResName resName = new ResName(TestUtil.TEST_PACKAGE, "plurals", "beer");
-    PluralResourceLoader.PluralRules pluralRules = pluralRulesResBundle.getValue(resName, "").value;
+    PluralResourceLoader.PluralRules pluralRules = pluralRulesResBundle.get(resName, "");
     assertThat(pluralRules.find(0).string).isEqualTo("@string/howdy");
     assertThat(pluralRules.find(1).string).isEqualTo("One beer");
     assertThat(pluralRules.find(2).string).isEqualTo("Two beers");

@@ -12,8 +12,6 @@ import org.robolectric.manifest.AndroidManifest;
 import org.robolectric.res.ResourceLoader;
 import org.robolectric.util.Scheduler;
 
-import java.io.File;
-
 import static org.robolectric.Shadows.shadowOf;
 
 /**
@@ -22,7 +20,7 @@ import static org.robolectric.Shadows.shadowOf;
 public class CoreShadowsAdapter implements ShadowsAdapter {
   @Override
   public Scheduler getBackgroundScheduler() {
-    return ShadowApplication.getInstance().getBackgroundScheduler();
+    return ShadowApplication.getInstance().getBackgroundThreadScheduler();
   }
 
   @Override

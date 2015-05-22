@@ -2,9 +2,6 @@ package org.robolectric;
 
 import org.junit.runners.model.InitializationError;
 import org.robolectric.annotation.Config;
-import org.robolectric.internal.bytecode.AndroidTranslatorClassInstrumentedTest;
-import org.robolectric.internal.bytecode.ClassInfo;
-import org.robolectric.internal.bytecode.InstrumentingClassLoaderConfig;
 import org.robolectric.internal.bytecode.ShadowMap;
 import org.robolectric.internal.ParallelUniverseInterface;
 import org.robolectric.manifest.AndroidManifest;
@@ -18,31 +15,6 @@ import java.util.Locale;
 import static org.robolectric.util.TestUtil.resourceFile;
 
 public class TestRunners {
-  public static class WithCustomClassList extends RobolectricTestRunner {
-    public WithCustomClassList(@SuppressWarnings("rawtypes") Class testClass) throws InitializationError {
-      super(testClass);
-    }
-
-    @Override
-    protected AndroidManifest createAppManifest(FsFile manifestFile, FsFile resDir, FsFile assetDir) {
-      return new AndroidManifest(resourceFile("TestAndroidManifest.xml"), resourceFile("res"), resourceFile("assets"));
-    }
-
-    @Override
-    public InstrumentingClassLoaderConfig createSetup() {
-      return new InstrumentingClassLoaderConfig() {
-        @Override
-        public boolean shouldInstrument(ClassInfo classInfo) {
-          String name = classInfo.getName();
-          if (name.equals(AndroidTranslatorClassInstrumentedTest.CustomPaint.class.getName())
-              || name.equals(AndroidTranslatorClassInstrumentedTest.ClassWithPrivateConstructor.class.getName())) {
-            return true;
-          }
-          return super.shouldInstrument(classInfo);
-        }
-      };
-    }
-  }
 
   public static class WithoutDefaults extends RobolectricTestRunner {
     public WithoutDefaults(Class<?> testClass) throws InitializationError {
@@ -74,19 +46,33 @@ public class TestRunners {
       Locale.setDefault(Locale.ENGLISH);
     }
 
-    @Override public InstrumentingClassLoaderConfig createSetup() {
-      return new InstrumentingClassLoaderConfig() {
-        @Override public boolean shouldAcquire(String name) {
-          // todo: whyyyyy!?!? if this isn't there, tests after TestRunnerSequenceTest start failing bad.
-          if (name.startsWith("org.mockito.")) return false;
-          return super.shouldAcquire(name);
-        }
-      };
-    }
-
     @Override
     protected AndroidManifest createAppManifest(FsFile manifestFile, FsFile resDir, FsFile assetDir) {
       return new AndroidManifest(resourceFile("TestAndroidManifest.xml"), resourceFile("res"), resourceFile("assets"));
+    }
+  }
+
+  public static class MultiApiWithDefaults extends MultiApiRobolectricTestRunner {
+
+    public MultiApiWithDefaults(Class<?> testClass) throws Throwable {
+      super(testClass);
+      Locale.setDefault(Locale.ENGLISH);
+    }
+
+    protected TestRunnerForApiVersion createTestRunner(Integer integer) throws InitializationError {
+      return new DefaultRunnerWithApiVersion(getTestClass().getJavaClass(), integer);
+    }
+
+    private static class DefaultRunnerWithApiVersion extends TestRunnerForApiVersion {
+
+      DefaultRunnerWithApiVersion(Class<?> type, Integer apiVersion) throws InitializationError {
+        super(type, apiVersion);
+      }
+
+      @Override
+      protected AndroidManifest createAppManifest(FsFile manifestFile, FsFile resDir, FsFile assetDir) {
+        return new AndroidManifest(resourceFile("TestAndroidManifest.xml"), resourceFile("res"), resourceFile("assets"));
+      }
     }
   }
 
