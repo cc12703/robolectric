@@ -72,6 +72,12 @@ public class ShadowDownloadManager {
 
     private int status;
 
+    private int reason;
+
+    private String localFileName;
+
+    private int bytesDownloadedSoFar;
+
     public int getStatus() {
       return this.status;
     }
@@ -79,6 +85,31 @@ public class ShadowDownloadManager {
     public void setStatus(int status) {
       this.status = status;
     }
+
+    public int getReason() {
+      return this.reason;
+    }
+
+    public void setReason(int reason) {
+      this.reason = reason;
+    }
+
+    public String getLocalFileName() {
+      return this.localFileName;
+    }
+
+    public void setLocalFileName(String fileName) {
+      this.localFileName = fileName;
+    }
+
+    public int getBytesDownloadedSoFar() {
+      return this.bytesDownloadedSoFar;
+    }
+
+    public void setBytesDownloadedSoFar(int bytes) {
+      this.bytesDownloadedSoFar = bytes;
+    }
+
 
     public Uri getUri() {
       return getFieldReflectively("mUri", realObject, DownloadManager.Request.class);
@@ -141,6 +172,7 @@ public class ShadowDownloadManager {
     private static final int COLUMN_INDEX_STATUS = 3;
     private static final int COLUMN_INDEX_URI = 4;
     private static final int COLUMN_INDEX_LOCAL_URI = 5;
+    private static final int COLUMN_INDEX_BYTES_DOWNLOADED_SO_FAR = 6;
 
     public List<DownloadManager.Request> requests = new ArrayList<>();
     private int positionIndex = -1;
@@ -187,6 +219,8 @@ public class ShadowDownloadManager {
 
       } else if (DownloadManager.COLUMN_LOCAL_URI.equals(columnName)) {
         return COLUMN_INDEX_LOCAL_URI;
+      } else if (DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR.equals(columnName)) {
+        return COLUMN_INDEX_BYTES_DOWNLOADED_SO_FAR;
       }
 
       return -1;
@@ -208,10 +242,7 @@ public class ShadowDownloadManager {
       ShadowRequest request = Shadows.shadowOf(requests.get(positionIndex));
       switch (columnIndex) {
         case COLUMN_INDEX_LOCAL_FILENAME:
-          return "local file name not implemented";
-
-        case COLUMN_INDEX_REASON:
-          return "reason not implemented";
+          return request.getLocalFileName();
 
         case COLUMN_INDEX_DESCRIPTION:
           return request.getDescription().toString();
@@ -232,6 +263,12 @@ public class ShadowDownloadManager {
       ShadowRequest request = Shadows.shadowOf(requests.get(positionIndex));
       if (columnIndex == COLUMN_INDEX_STATUS) {
         return request.getStatus();
+      }
+      else if(columnIndex == COLUMN_INDEX_REASON) {
+        return request.getReason();
+      }
+      else if(columnIndex == COLUMN_INDEX_BYTES_DOWNLOADED_SO_FAR) {
+        return request.getBytesDownloadedSoFar();
       }
       return 0;
     }
