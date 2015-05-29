@@ -5,7 +5,8 @@
   <parent>
     <groupId>org.robolectric</groupId>
     <artifactId>robolectric-shadows</artifactId>
-    <version>3.0-CUSTOM</version>
+    <version>3.0-CUSTOM-v1</version>
+
   </parent>
 
   <artifactId>shadows-multidex</artifactId>

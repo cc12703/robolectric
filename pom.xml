@@ -10,7 +10,7 @@
 
   <groupId>org.robolectric</groupId>
   <artifactId>robolectric-parent</artifactId>
-  <version>3.0-CUSTOM</version>
+  <version>3.0-CUSTOM-v1</version>
   <packaging>pom</packaging>
   <description>An alternative Android testing framework.</description>
   <url>http://robolectric.org/</url>
@@ -120,6 +120,15 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+
+
+<distributionManagement> 
+    <repository> 
+        <id>youtou-repo-snapshots</id> 
+        <name>Youtou Repository</name> 
+        <url>http://maven.youtoutech.net:8180/archiva/repository/snapshots</url> 
+    </repository> 
+</distributionManagement> 
 
   <build>
     <pluginManagement>

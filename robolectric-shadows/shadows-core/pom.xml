@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.robolectric</groupId>
     <artifactId>robolectric-shadows</artifactId>
-    <version>3.0-CUSTOM</version>
+    <version>3.0-CUSTOM-v1</version>
   </parent>
 
   <artifactId>shadows-core</artifactId>
@@ -460,31 +460,31 @@
                 <configuration>
                   <artifacts>
                     <artifact>
-                      <file>dist/shadows-core-3.0-CUSTOM-16.jar</file>
+                      <file>dist/shadows-core-3.0-CUSTOM-v1-16.jar</file>
                       <type>jar</type>
                       <classifier>16</classifier>
                     </artifact>
 
                     <artifact>
-                      <file>dist/shadows-core-3.0-CUSTOM-17.jar</file>
+                      <file>dist/shadows-core-3.0-CUSTOM-v1-17.jar</file>
                       <type>jar</type>
                       <classifier>17</classifier>
                     </artifact>
 
                     <artifact>
-                      <file>dist/shadows-core-3.0-CUSTOM-18.jar</file>
+                      <file>dist/shadows-core-3.02-CUSTOM-v1-18.jar</file>
                       <type>jar</type>
                       <classifier>18</classifier>
                     </artifact>
 
                     <artifact>
-                      <file>dist/shadows-core-3.0-CUSTOM-19.jar</file>
+                      <file>dist/shadows-core-3.0-CUSTOM-v1-19.jar</file>
                       <type>jar</type>
                       <classifier>19</classifier>
                     </artifact>
 
                     <artifact>
-                      <file>dist/shadows-core-3.0-CUSTOM-21.jar</file>
+                      <file>dist/shadows-core-3.0-CUSTOM-v1-21.jar</file>
                       <type>jar</type>
                       <classifier>21</classifier>
                     </artifact>
