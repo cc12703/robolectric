@@ -20,6 +20,7 @@ public class ShadowTelephonyManager {
   private String simCountryIso;
   private int simState = TelephonyManager.SIM_STATE_READY;
   private String line1Number;
+  private String subscriberId;
 
   @Implementation
   public void listen(PhoneStateListener listener, int events) {
@@ -135,5 +136,15 @@ public class ShadowTelephonyManager {
 
   public void setLine1Number(String line1Number) {
     this.line1Number = line1Number;
+  }
+
+
+  @Implementation
+  public String getSubscriberId() {
+    return subscriberId;
+  }
+
+  public void setSubscriberId(String subscriberId) {
+    this.subscriberId = subscriberId;
   }
 }
