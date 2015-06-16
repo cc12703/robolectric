@@ -11,10 +11,7 @@ import org.robolectric.annotation.RealObject;
 import org.robolectric.util.ReflectionHelpers;
 import org.robolectric.fakes.BaseCursor;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Shadows Androids DownloadManager
@@ -56,6 +53,10 @@ public class ShadowDownloadManager {
       }
     }
     return result;
+  }
+
+  public Collection<Long> getAllRequestIDs() {
+    return requestMap.keySet();
   }
 
   public DownloadManager.Request getRequest(long id) {
